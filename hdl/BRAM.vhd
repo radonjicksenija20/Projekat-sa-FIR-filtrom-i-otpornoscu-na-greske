@@ -5,7 +5,7 @@ use work.util_pkg.all;
 
 entity BRAM is
 generic(
-        width_g:positive:=17;
+        width_g:positive:=24;
         size_g:positive:=51000
         );
 port(
@@ -13,8 +13,8 @@ port(
     clkb : in std_logic;
     ena: in std_logic;
     enb: in std_logic;
-    wea: in std_logic_vector(3 downto 0);
-    web: in std_logic_vector(3 downto 0);
+    wea: in std_logic;
+    web: in std_logic;
     addra : in std_logic_vector(log2c(size_g)-1 downto 0);
     addrb : in std_logic_vector(log2c(size_g)-1 downto 0);
     dia: in std_logic_vector(width_g-1 downto 0);
@@ -41,7 +41,7 @@ begin
         if (ena = '1') then
             doa <= RAM(to_integer(unsigned(addra)));
 
-            if (wea /= "0000") then
+            if (wea /= '0') then
                 RAM(to_integer(unsigned(addra))) <= dia;
             end if;
         end if;
@@ -52,7 +52,7 @@ begin
         if (enb = '1') then
             dob <= RAM(to_integer(unsigned(addrb)));
             
-            if (web /= "0000") then
+            if (web /= '0') then
                 RAM(to_integer(unsigned(addrb))) <= dib;
                 
             end if;

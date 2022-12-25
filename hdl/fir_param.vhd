@@ -5,21 +5,23 @@ use work.util_pkg.all;
 
 entity fir_param is
     generic(fir_ord : natural :=20;
-            input_data_width : natural := 17;
-            output_data_width : natural := 17;
+            input_data_width : natural := 24;
+            output_data_width : natural := 24;
             number_samples_g:positive:=51000);
     Port ( clk : in STD_LOGIC;
            reset : in std_logic;
-           we_i : in STD_LOGIC;
+           we_o_fir_bram2 : out std_logic;
+           we_i_coeff: in std_logic;
            
-           coef_i : in STD_LOGIC_VECTOR (input_data_width-1 downto 0);
-           coef_addr_i : std_logic_vector(log2c(fir_ord+1)-1 downto 0);
+           coef_i_FIR : in STD_LOGIC_VECTOR (input_data_width-1 downto 0);
+           coef_addr_i_FIR : in std_logic_vector(log2c(fir_ord+1)-1 downto 0);
            
-           data_i : in STD_LOGIC_VECTOR (input_data_width-1 downto 0);
-           addr_data_i : std_logic_vector(log2c(number_samples_g+1)-1 downto 0); --netacno, ima vise
+           data_i_FIR  : in STD_LOGIC_VECTOR (input_data_width-1 downto 0);
+           addr_data_o_BRAM1_FIR : out std_logic_vector(log2c(number_samples_g+1)-1 downto 0); 
            
-           data_o : out STD_LOGIC_VECTOR (output_data_width-1 downto 0);
-           addr_data_o : std_logic_vector(log2c(number_samples_g+1)-1 downto 0));
+           data_o_FIR : out STD_LOGIC_VECTOR (output_data_width-1 downto 0);
+           addr_data_o_FIR_BRAM2 : out std_logic_vector(log2c(number_samples_g+1)-1 downto 0));
+         
 end fir_param;
 
 architecture Behavioral of fir_param is
@@ -33,8 +35,8 @@ begin
     process(clk)
     begin
         if(clk'event and clk = '1')then
-            if we_i = '1' then
-                b_s(to_integer(unsigned(coef_addr_i))) <= coef_i;
+            if we_i_coeff = '1' then
+                b_s(to_integer(unsigned(coef_addr_i_FIR))) <= coef_i_FIR;
             end if;
         end if;
     end process;
@@ -44,7 +46,7 @@ begin
     entity work.mac(behavioral)
     generic map(input_data_width=>input_data_width)
     port map(clk=>clk,
-             u_i=>data_i,
+             u_i=>data_i_FIR,
              b_i=>b_s(fir_ord),
              sec_i=>(others=>'0'),
              sec_o=>mac_inter(0));
@@ -55,7 +57,7 @@ begin
         entity work.mac(behavioral)
         generic map(input_data_width=>input_data_width)
         port map(clk=>clk,
-                 u_i=>data_i,
+                 u_i=>data_i_FIR,
                  b_i=>b_s(fir_ord-i),
                  sec_i=>mac_inter(i-1),
                  sec_o=>mac_inter(i));
@@ -64,7 +66,7 @@ begin
     process(clk)
     begin
         if(clk'event and clk='1')then
-            data_o <= mac_inter(fir_ord - 1)(2*input_data_width-2 downto 2*input_data_width-output_data_width-1);
+            data_o_FIR <= mac_inter(fir_ord - 1)(2*input_data_width-2 downto 2*input_data_width-output_data_width-1);
         end if;
     end process;
     
