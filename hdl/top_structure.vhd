@@ -83,6 +83,7 @@ architecture Behavioral of top_structure is
             number_samples_g:positive:=51000);
     Port ( clk : in STD_LOGIC;
            reset : in std_logic;
+           start_FIR : in std_logic;
            
            we_o_fir_bram2 : out std_logic;
            we_i_coeff: in std_logic; 
@@ -94,7 +95,8 @@ architecture Behavioral of top_structure is
            addr_data_o_BRAM1_FIR : std_logic_vector(log2c(number_samples_g+1)-1 downto 0); --netacno, ima vise
            
            data_o_FIR : out STD_LOGIC_VECTOR (output_data_width-1 downto 0);
-           addr_data_o_FIR_BRAM2 : std_logic_vector(log2c(number_samples_g+1)-1 downto 0));
+           addr_data_o_FIR_BRAM2 : std_logic_vector(log2c(number_samples_g+1)-1 downto 0);
+           ready_o_FIR : std_logic);
 end component;
 begin
 
@@ -133,6 +135,8 @@ zero_width_g <= std_logic_vector(to_unsigned(0,input_data_width));
     port map(
             clk => clk,
             reset => reset,
+            start_FIR => start,
+            
             we_o_fir_bram2 => we_FIR_BRAM2_s,
             we_i_coeff => we_i_coeff,
             coef_i_FIR => coef_i,
@@ -142,7 +146,8 @@ zero_width_g <= std_logic_vector(to_unsigned(0,input_data_width));
            addr_data_o_BRAM1_FIR => addr_data_o_BRAM1_FIR_s, 
            
            data_o_FIR => data_o_FIR_BRAM2_s,
-           addr_data_o_FIR_BRAM2 => addr_data_o_FIR_BRAM2_s
+           addr_data_o_FIR_BRAM2 => addr_data_o_FIR_BRAM2_s,
+          -- ready_o_FIR => ready_o
             );
             
     mem2: BRAM
