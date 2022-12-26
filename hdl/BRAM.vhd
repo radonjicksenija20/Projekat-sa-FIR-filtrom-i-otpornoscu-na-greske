@@ -6,7 +6,7 @@ use work.util_pkg.all;
 entity BRAM is
 generic(
         width_g:positive:=24;
-        size_g:positive:=51000
+        size_g:positive:=120000
         );
 port(
     clka : in std_logic;

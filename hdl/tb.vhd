@@ -10,24 +10,24 @@ entity tb is
     generic(fir_ord : natural :=20;
             input_data_width : natural := 24;
             output_data_width : natural := 24;
-            number_samples_g:positive:=51000);
+            number_samples_g:positive:=120000);
 --  Port ( );
 end tb;
 
 architecture Behavioral of tb is
     constant period : time := 20 ns;
     signal clk : std_logic;
-    file input_test_vector : text open read_mode is "C:\Users\ksenija\Desktop\Fir_projekat\Projekat-sa-FIR-filtrom-i-otpornoscu-na-greske\matlab\input.txt";
-    file output_check_vector : text open read_mode is "C:\Users\ksenija\Desktop\Fir_projekat\Projekat-sa-FIR-filtrom-i-otpornoscu-na-greske\matlab\expected.txt";
-    file input_coef : text open read_mode is "C:\Users\ksenija\Desktop\Fir_projekat\Projekat-sa-FIR-filtrom-i-otpornoscu-na-greske\matlab\coef.txt";
+    file input_test_vector : text open read_mode is "C:\Users\student\Downloads\Fir_Ksenija\ee61-2022-FIR\Projekat-sa-FIR-filtrom-i-otpornoscu-na-greske\matlab\input.txt";
+    file output_check_vector : text open read_mode is "C:\Users\student\Downloads\Fir_Ksenija\ee61-2022-FIR\Projekat-sa-FIR-filtrom-i-otpornoscu-na-greske\matlab\expected.txt";
+    file input_coef : text open read_mode is "C:\Users\student\Downloads\Fir_Ksenija\ee61-2022-FIR\Projekat-sa-FIR-filtrom-i-otpornoscu-na-greske\matlab\coef.txt";
     signal reset :  std_logic;
-    signal start :  std_logic;    
+    signal start :  std_logic := '0';    
     signal we_bram1_i : std_logic; 
     signal coef_i : STD_LOGIC_VECTOR (input_data_width-1 downto 0);
     signal coef_addr_i : std_logic_vector(log2c(fir_ord+1)-1 downto 0);
     signal  we_i_coeff:  std_logic;
     signal data_i : STD_LOGIC_VECTOR (input_data_width-1 downto 0);
-    signal addr_data_i : std_logic_vector(log2c(number_samples_g+1)-1 downto 0); --netacno, ima vise
+    signal addr_data_i : std_logic_vector(log2c(number_samples_g+1)-1 downto 0);
     signal data_o : STD_LOGIC_VECTOR (output_data_width-1 downto 0);
     signal addr_data_o : std_logic_vector(log2c(number_samples_g+1)-1 downto 0);
     signal ready_o : STD_LOGIC;
@@ -56,9 +56,10 @@ begin
              data_i => data_i,
              addr_data_i => addr_data_i,
              data_o => data_o,
-             addr_data_o => addr_data_o
+             addr_data_o => addr_data_o,
+             ready_o => ready_o
              );
-           
+    
     clk_process:
     process
     begin
@@ -86,12 +87,11 @@ begin
         end loop;
         
         --ulaz za filtriranje 
-        
-        while not endfile(input_test_vector) loop
-            we_bram1_i <= '1';
+        we_bram1_i <= '1';
+        while not endfile(input_test_vector) loop      
             readline(input_test_vector,tv);
             data_i <= to_std_logic_vector(string(tv));
-            addr_data_i <= std_logic_vector(TO_UNSIGNED(j, log2c(number_samples_g)));
+            addr_data_i <= std_logic_vector(to_UNSIGNED(j, log2c(number_samples_g+1)-1) + 1);
             j <= j + 1;
             wait until falling_edge(clk);
             start_check <= '1';
@@ -99,25 +99,29 @@ begin
         start_check <= '0';
         report "verification done!" severity failure;
         we_bram1_i <= '0';
+          
+        start <= '1';
+        wait until rising_edge(clk);
+        wait until rising_edge(clk);
+        start <= '0';    
+        wait;    
     end process;
     
-    check_process:
-    process
-        variable check_v : line;
-
-    begin
-        wait until start_check = '1';
-        wait until rising_edge(clk);
+--    start_and_check_process:
+--    process
+--        variable check_v : line;
+--    begin
+--        wait until start_check = '1';
+--        wait until rising_edge(clk);
         
-        
-        while(true)loop
-            wait until rising_edge(clk);
-            readline(output_check_vector,check_v);
-            tmp <= to_std_logic_vector(string(check_v));
-            if(abs(signed(tmp) - signed(data_o)) > "000000000000000000000111")then
-                report "result mismatch!" severity warning;
-            end if;
-        end loop;
-    end process;
+--        while(true)loop
+--            wait until rising_edge(clk);
+--            readline(output_check_vector,check_v);
+--            tmp <= to_std_logic_vector(string(check_v));
+--            if(abs(signed(tmp) - signed(data_o)) > "000000000000000000000111")then
+--                report "result mismatch!" severity warning;
+--            end if;
+--        end loop;
+--    end process;
     
 end Behavioral;

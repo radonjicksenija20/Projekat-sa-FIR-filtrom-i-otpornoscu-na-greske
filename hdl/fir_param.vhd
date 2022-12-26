@@ -7,7 +7,7 @@ entity fir_param is
     generic(fir_ord : natural :=20;
             input_data_width : natural := 24;
             output_data_width : natural := 24;
-            number_samples_g:positive:=51000);
+            number_samples_g:positive:=120000);
     Port ( clk : in STD_LOGIC;
            reset : in std_logic;
            start_FIR: in std_logic;
@@ -23,7 +23,7 @@ entity fir_param is
            
            data_o_FIR : out STD_LOGIC_VECTOR (output_data_width-1 downto 0);
            addr_data_o_FIR_BRAM2 : out std_logic_vector(log2c(number_samples_g+1)-1 downto 0);
-           ready_o_FIR: std_Logic);
+           ready_o_FIR: out std_Logic);
          
 end fir_param;
 
@@ -33,10 +33,11 @@ architecture Behavioral of fir_param is
     type coef_t is array (fir_ord downto 0) of std_logic_vector(input_data_width-1 downto 0);
     signal b_s : coef_t := (others=>(others=>'0')); 
     
-    type state_type is (IDLE, S1_ADDRESS, S2_DATA);
+    type state_type is (IDLE, S1_ADDRESS);
     signal state_reg, state_next: state_type;
-    signal i_reg, i_next: std_logic_vector(log2c(number_samples_g+1)-1 downto 0);      
-                                                       
+    signal i_reg, i_next: std_logic_vector(log2c(number_samples_g+1)-1 downto 0);     
+    signal i_reg_2, i_next_2: std_logic_vector(log2c(number_samples_g+1)-1 downto 0);  
+              
 begin
 
     process(clk)
@@ -47,35 +48,47 @@ begin
             end if;
         end if;
     end process;
+
     
     process(clk)
     begin
         if(clk'event and clk = '1')then
             if(reset = '1')then
                 state_reg <= IDLE;
-                i_reg <= (others=> '0');
+                  i_reg <= (others=> '0');
+                       
             else
                 state_reg <= state_next;
                 i_reg <= i_next;
             end if;
+ 
          end if;
     end process;
     
-   process(state_next, state_reg, start_FIR, data_i_FIR) 
+   process(state_next, state_reg, start_FIR, data_i_FIR, i_reg) 
    begin
+    i_next <= i_reg;
     case(state_reg) is
         when IDLE => 
             if(start_FIR = '1')then
                 state_next <= S1_ADDRESS;
             end if;
-      when S1_ADDRESS =>
-            addr_data_o_BRAM1_FIR <= i_reg;
-            i_next <= std_logic_vector(unsigned(i_reg) + 1);
-            state_next <= S2_DATA;
+        when S1_ADDRESS =>
+                 addr_data_o_BRAM1_FIR <= i_reg;
+                 i_next <= std_logic_vector(unsigned(i_reg) + 1);
+                 if (std_logic_vector(to_unsigned(number_samples_g, log2c(number_samples_g+1))) = i_reg) then
+                      state_next <= IDLE;
+                      ready_o_FIR <= '1';
+                  end if;
      end case;
    end process;
    
+   process(state_next, state_reg, start_FIR, data_i_FIR, i_reg) 
    
+   if(i_reg >= 3)
+     i_reg_2_nextnext ++
+   
+   end process;
     first_section:
     entity work.mac(behavioral)
     generic map(input_data_width=>input_data_width)

@@ -19,23 +19,24 @@ entity top_structure is
 generic(    fir_ord : natural :=20;
             input_data_width : natural := 24;
             output_data_width : natural := 24;
-            number_samples_g:positive:=51000);
+            number_samples_g:positive:=120000);
     Port ( clk : in STD_LOGIC;
            reset : in std_logic;
            start: in std_logic;
            we_bram1_i : in std_logic;
            
            coef_i : in STD_LOGIC_VECTOR (input_data_width-1 downto 0);
-           coef_addr_i : std_logic_vector(log2c(fir_ord+1)-1 downto 0);
+           coef_addr_i : in std_logic_vector(log2c(fir_ord+1)-1 downto 0);
            we_i_coeff: in std_logic;
            
            data_i : in STD_LOGIC_VECTOR (input_data_width-1 downto 0);
-           addr_data_i : std_logic_vector(log2c(number_samples_g+1)-1 downto 0); --netacno, ima vise
-           
+           addr_data_i : in std_logic_vector(log2c(number_samples_g+1)-1 downto 0); 
+          
            data_o : out STD_LOGIC_VECTOR (output_data_width-1 downto 0);
-           addr_data_o : std_logic_vector(log2c(number_samples_g+1)-1 downto 0);
+           addr_data_o : out std_logic_vector(log2c(number_samples_g+1)-1 downto 0);
            
-           ready_o : out STD_LOGIC);
+           ready_o : out STD_LOGIC 
+           );
 end top_structure;
 
 architecture Behavioral of top_structure is
@@ -52,7 +53,11 @@ architecture Behavioral of top_structure is
    --signals between FIR and BRAM2
    signal  data_o_FIR_BRAM2_s: STD_LOGIC_VECTOR (input_data_width-1 downto 0);
    signal addr_data_o_FIR_BRAM2_s : std_logic_vector(log2c(number_samples_g+1)-1 downto 0);
-   signal we_FIR_BRAM2_s : std_logic;
+   signal we_FIR_BRAM2_s : std_logic; 
+   --signal for  ready output
+   signal ready_o_s : std_logic; 
+   --signal for adrres 
+   signal addr_data_o_s : std_logic_vector(log2c(number_samples_g+1)-1 downto 0); 
   
     component  BRAM
     generic(
@@ -81,22 +86,24 @@ architecture Behavioral of top_structure is
             input_data_width : natural := 17;
             output_data_width : natural := 17;
             number_samples_g:positive:=51000);
-    Port ( clk : in STD_LOGIC;
+            
+    Port (  clk : in STD_LOGIC;
            reset : in std_logic;
-           start_FIR : in std_logic;
-           
+           start_FIR: in std_logic;
+                      
            we_o_fir_bram2 : out std_logic;
-           we_i_coeff: in std_logic; 
+           we_i_coeff: in std_logic;
            
            coef_i_FIR : in STD_LOGIC_VECTOR (input_data_width-1 downto 0);
-           coef_addr_i_FIR : std_logic_vector(log2c(fir_ord+1)-1 downto 0);
+           coef_addr_i_FIR : in std_logic_vector(log2c(fir_ord+1)-1 downto 0);
            
-           data_i_FIR : in STD_LOGIC_VECTOR (input_data_width-1 downto 0);
-           addr_data_o_BRAM1_FIR : std_logic_vector(log2c(number_samples_g+1)-1 downto 0); --netacno, ima vise
-           
+           data_i_FIR  : in STD_LOGIC_VECTOR (input_data_width-1 downto 0);
+           addr_data_o_BRAM1_FIR : out std_logic_vector(log2c(number_samples_g+1)-1 downto 0); 
+         
            data_o_FIR : out STD_LOGIC_VECTOR (output_data_width-1 downto 0);
-           addr_data_o_FIR_BRAM2 : std_logic_vector(log2c(number_samples_g+1)-1 downto 0);
-           ready_o_FIR : std_logic);
+           addr_data_o_FIR_BRAM2 : out std_logic_vector(log2c(number_samples_g+1)-1 downto 0);
+           ready_o_FIR: out std_Logic
+           );       
 end component;
 begin
 
@@ -147,7 +154,7 @@ zero_width_g <= std_logic_vector(to_unsigned(0,input_data_width));
            
            data_o_FIR => data_o_FIR_BRAM2_s,
            addr_data_o_FIR_BRAM2 => addr_data_o_FIR_BRAM2_s,
-          -- ready_o_FIR => ready_o
+           ready_o_FIR => ready_o_s
             );
             
     mem2: BRAM
@@ -163,10 +170,13 @@ zero_width_g <= std_logic_vector(to_unsigned(0,input_data_width));
             wea => we_FIR_BRAM2_s,               -- portA za UPIS u BRAM2 iz FIRa
             web => zero,                         -- portB za CITANJE odbiraka iz BRAM2 za izlazne podatke
             addra => addr_data_o_FIR_BRAM2_s,  --adresa na koju se upisuje, iz FIRa
-            addrb => addr_data_o,              --adresa sa koje se cita za izlazne podakte
+            addrb => addr_data_o_s,              --adresa sa koje se cita za izlazne podakte
             dia => data_o_FIR_BRAM2_s,
             dib => zero_width_g,  
             doa => open,
             dob =>  data_o                            --izlazni podaci
             );
+            
+      ready_o <=  ready_o_s;
+      addr_data_o <= addr_data_o_s;
 end Behavioral;
